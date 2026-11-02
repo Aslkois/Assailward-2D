@@ -1,0 +1,21 @@
+// Single source of truth for the control reference shown in menus and the pause screen.
+export const CONTROLS: [string, string][] = [
+  ['W A S D', 'Move'],
+  ['Mouse', 'Aim'],
+  ['Left click', 'Fire / use selected equipment'],
+  ['Right click', 'Precision aim / secondary equipment action'],
+  ['F (hold)', 'Contextual: barricade, reinforce, plant, disable, pick up, bash'],
+  ['R', 'Reload'],
+  ['V', 'Melee strike'],
+  ['Shift (hold)', 'Sprint'],
+  ['Ctrl or C', 'Crouch (toggle)'],
+  ['Alt', 'Quiet walk (toggle)'],
+  ['1', 'Primary weapon'],
+  ['2', 'Secondary weapon'],
+  ['3', 'Utilities (press again to cycle)'],
+  ['4', 'Special gadgets (press again to cycle)'],
+  ['5', 'Camera system: drones (ATK) / cameras (DEF)'],
+  ['Tab (hold)', 'Scoreboard'],
+  ['Esc', 'Pause'],
+  ['F3', 'Debug overlay (doorway states, bot paths)'],
+];
