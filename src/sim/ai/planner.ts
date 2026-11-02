@@ -1,6 +1,7 @@
 import { CELL, CHAR_RADIUS } from '../../config/constants';
 import type { EquipId } from '../../config/equipment';
 import { circleBlocked } from '../collision';
+import { lineOfSight } from '../sight';
 import { findEquip, type Character } from '../entities';
 import { angleTo, dist, fromAngle, type Vec2 } from '../math';
 import type { Doorway, Panel } from '../map';
@@ -20,6 +21,7 @@ interface SharedJob {
   stand: Vec2;
   claimedBy: number;
   done: boolean;
+  inObjective: boolean; // stand point inside the objective room (anchors' jobs); otherwise roamers'
 }
 
 function standPoint(world: World, center: Vec2, normal: Vec2, towards: Vec2, offset: number): Vec2 | null {
@@ -81,15 +83,15 @@ export class TeamPlanner {
     this.jobs = [];
     const objRoom = m.rooms.find((r) => r.objective)!;
     const near = (d: Doorway) => d.rooms.includes(objRoom.id) || dist(d.center, obj) < 480;
-    const doors = m.doorways.filter((d) => !d.exterior && near(d)).sort((a, b) => dist(a.center, obj) - dist(b.center, obj)).slice(0, 9);
-    for (const d of doors) {
+    const nearDoorways = m.doorways.filter((d) => !d.exterior && near(d)).sort((a, b) => dist(a.center, obj) - dist(b.center, obj)).slice(0, 9);
+    for (const d of nearDoorways) {
       const stand = standPoint(world, d.center, d.normal, obj, 20);
-      if (stand) this.jobs.push({ key: `b${d.id}`, kind: 'barricade', id: d.id, stand, claimedBy: -1, done: false });
+      if (stand) this.jobs.push({ key: `b${d.id}`, kind: 'barricade', id: d.id, stand, claimedBy: -1, done: false, inObjective: !!m.roomAt(stand)?.objective });
     }
     const panels = m.panels.filter((p) => !p.reinforced).sort((a, b) => dist(a.center, obj) - dist(b.center, obj)).slice(0, world.reinforcements[this.team]);
     for (const p of panels) {
       const stand = standPoint(world, p.center, p.normal, obj, 20);
-      if (stand) this.jobs.push({ key: `r${p.id}`, kind: 'reinforce', id: p.id, stand, claimedBy: -1, done: false });
+      if (stand) this.jobs.push({ key: `r${p.id}`, kind: 'reinforce', id: p.id, stand, claimedBy: -1, done: false, inObjective: !!m.roomAt(stand)?.objective });
     }
     // Personal deployables, placed around the objective room's entrances
     const objDoors = m.doorways.filter((d) => d.rooms.includes(objRoom.id));
@@ -97,19 +99,19 @@ export class TeamPlanner {
       const ch = world.charById(b.id);
       if (!ch) return;
       const list: { equip: EquipId; stand: Vec2; aim: Vec2 }[] = [];
-      const door = objDoors[i % Math.max(1, objDoors.length)];
-      const inward = door ? (dist({ x: door.center.x + door.normal.x * 30, y: door.center.y + door.normal.y * 30 }, obj) < dist(door.center, obj) ? door.normal : { x: -door.normal.x, y: -door.normal.y }) : { x: 0, y: 1 };
+      const entry = objDoors[i % Math.max(1, objDoors.length)];
+      const inward = entry ? (dist({ x: entry.center.x + entry.normal.x * 30, y: entry.center.y + entry.normal.y * 30 }, obj) < dist(entry.center, obj) ? entry.normal : { x: -entry.normal.x, y: -entry.normal.y }) : { x: 0, y: 1 };
       const anchor = m.def.anchors[i % m.def.anchors.length];
       const anchorPos = m.cellCenter(anchor.cx, anchor.cy);
       for (const eq of [...ch.loadout.utilities, ...ch.loadout.gadgets]) {
-        if (eq === 'barbed_wire' && door) {
-          const stand = { x: door.center.x + inward.x * 22, y: door.center.y + inward.y * 22 };
+        if (eq === 'barbed_wire' && entry) {
+          const stand = { x: entry.center.x + inward.x * 22, y: entry.center.y + inward.y * 22 };
           list.push({ equip: eq, stand, aim: { x: stand.x + inward.x * 60, y: stand.y + inward.y * 60 } });
         } else if (eq === 'shield') {
           const f = fromAngle(anchor.facing);
           list.push({ equip: eq, stand: anchorPos, aim: { x: anchorPos.x + f.x * 60, y: anchorPos.y + f.y * 60 } });
         } else if (eq === 'jammer' || eq === 'alarm') {
-          const tgt = eq === 'alarm' && door ? { x: door.center.x + inward.x * 40, y: door.center.y + inward.y * 40 } : { x: obj.x + (i - 2) * 40, y: obj.y - 40 };
+          const tgt = eq === 'alarm' && entry ? { x: entry.center.x + inward.x * 40, y: entry.center.y + inward.y * 40 } : { x: obj.x + (i - 2) * 40, y: obj.y - 40 };
           if (!circleBlocked(world, tgt.x, tgt.y, CHAR_RADIUS)) list.push({ equip: eq, stand: tgt, aim: { x: tgt.x + 40, y: tgt.y } });
         } else if (eq === 'bp_camera') {
           const back = fromAngle(anchor.facing + Math.PI);
@@ -130,6 +132,13 @@ export class TeamPlanner {
         b.routine = null;
       }
       return;
+    }
+    // last seconds of preparation: abandon unstarted jobs and take up role positions
+    if (phase === 'prep' && world.round.timeLeft < 5 && !ch.action && (b.task?.type === 'barricade' || b.task?.type === 'reinforce' || b.task?.type === 'place')) {
+      this.releaseJobs(b.id);
+      b.task = null;
+      b.routine = null;
+      this.personal.set(b.id, []);
     }
     if (b.task || b.routine || ch.action) {
       // roamers drop patrols to investigate fresh call-outs
@@ -153,6 +162,7 @@ export class TeamPlanner {
       let bd = Infinity;
       for (const j of this.jobs) {
         if (j.done || (j.claimedBy >= 0 && j.claimedBy !== b.id)) continue;
+        if (j.inObjective !== (b.role === 'anchor') || world.round.timeLeft < 6) continue;
         if (j.kind === 'barricade') {
           const d = m.doorways[j.id];
           if (d.barricade || world.spentDoorways.has(d.id)) {
@@ -198,7 +208,7 @@ export class TeamPlanner {
       return;
     }
     if (phase === 'prep') {
-      const rp = m.def.roamPoints[(b.anchorIndex * 3) % m.def.roamPoints.length];
+      const rp = m.def.defenderPrepSpots[b.anchorIndex % m.def.defenderPrepSpots.length];
       const pos = m.cellCenter(rp[0], rp[1]);
       b.task = { type: 'hold', pos, facing: angleTo(m.objectiveCenter, pos) };
       return;
@@ -220,11 +230,23 @@ export class TeamPlanner {
     if (phase === 'planted') {
       const dev = world.round.device!;
       if (b.task?.type !== 'guard') {
+        // Post-plant: spread out to spots that watch the device itself, so anyone trying to
+        // disable it walks into a sightline.
         const i = brains.indexOf(b);
-        const ang = (i / Math.max(1, brains.length)) * Math.PI * 2;
-        let pos = { x: dev.pos.x + Math.cos(ang) * 70, y: dev.pos.y + Math.sin(ang) * 50 };
-        if (circleBlocked(world, pos.x, pos.y, CHAR_RADIUS)) pos = { x: dev.pos.x + Math.cos(ang) * 30, y: dev.pos.y + Math.sin(ang) * 20 };
-        b.task = { type: 'guard', pos, facing: angleTo(dev.pos, pos), claymoreTried: false };
+        const taken = brains.filter((o) => o !== b && o.task?.type === 'guard').map((o) => (o.task as { pos: Vec2 }).pos);
+        let pos: Vec2 | null = null;
+        for (const r of [150, 120, 90, 60]) {
+          for (let k = 0; k < 8 && !pos; k++) {
+            const ang = ((i * 3 + k) / 8) * Math.PI * 2;
+            const p = { x: dev.pos.x + Math.cos(ang) * r, y: dev.pos.y + Math.sin(ang) * r };
+            if (circleBlocked(world, p.x, p.y, CHAR_RADIUS + 1) || !lineOfSight(world, p, dev.pos, false)) continue;
+            if (taken.some((t) => dist(t, p) < 50)) continue;
+            pos = p;
+          }
+          if (pos) break;
+        }
+        pos ??= { x: dev.pos.x, y: dev.pos.y };
+        b.task = { type: 'guard', pos, facing: angleTo(pos, dev.pos), claymoreTried: false };
       }
       return;
     }

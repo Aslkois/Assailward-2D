@@ -18,6 +18,20 @@ describe('round phases and objective', () => {
     expect(atk.pos.y).toBeLessThanOrEqual(zone.y1);
   });
 
+  it('preparation phase: attackers are weapons-locked and nobody can be hurt', () => {
+    const w = makeWorld();
+    const atk = byTeam(w, 0);
+    const def = byTeam(w, 1);
+    const mag = atk.inv.primary.mag;
+    run(w, 0.5, { [atk.id]: () => ({ fire: true, firePressed: true }) });
+    expect(atk.inv.primary.mag).toBe(mag);
+    w.damageCharacter(def, 50, atk.id, 'test');
+    expect(def.hp).toBe(100);
+    toAction(w);
+    w.damageCharacter(def, 50, atk.id, 'test');
+    expect(def.hp).toBe(50);
+  });
+
   it('plant -> detonation wins the round for attackers', () => {
     const w = makeWorld({ rules: { fuseTime: 2, plantTime: 1 } });
     const atk = byTeam(w, 0);

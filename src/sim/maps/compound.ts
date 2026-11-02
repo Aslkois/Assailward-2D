@@ -47,6 +47,7 @@ export const COMPOUND: MapDef = {
     { cx: 49, cy: 40, facing: -PI / 2 },
   ],
   roamPoints: [[25, 17], [49, 20], [74, 19], [24, 33], [75, 37], [26, 51], [47, 52], [75, 49]],
+  defenderPrepSpots: [[24, 33], [75, 37], [47, 52]],
   approaches: [
     { name: 'North', spawn: 'North Gate', waypoints: [[49, 8], [49, 20]] },
     { name: 'Lobby', spawn: 'West Lot', waypoints: [[10, 19], [25, 19], [25, 34]] },

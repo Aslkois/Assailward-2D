@@ -73,17 +73,17 @@ export function findContextAction(world: World, ch: Character): ContextOption | 
       return { kind: 'pickup', label: `Pick up ${EQUIPMENT[d.kind as EquipId]?.name ?? d.kind}`, duration: 0.8, target: d.id };
     }
   }
-  const door = nearestDoorway(world, ch.pos, INTERACT_REACH);
+  const doorway = nearestDoorway(world, ch.pos, INTERACT_REACH);
   let doorOpt: ContextOption | null = null;
-  if (door) {
-    const b = door.barricade;
+  if (doorway) {
+    const b = doorway.barricade;
     if (ch.side === 'defend') {
-      if (!b && !world.spentDoorways.has(door.id)) doorOpt = { kind: 'build_barricade', label: 'Barricade doorway', duration: BARRICADE_BUILD_TIME, target: door.id };
+      if (!b && !world.spentDoorways.has(doorway.id)) doorOpt = { kind: 'build_barricade', label: 'Barricade doorway', duration: BARRICADE_BUILD_TIME, target: doorway.id };
       else if (b && b.complete && b.team === ch.team) {
-        doorOpt = { kind: 'remove_barricade', label: isDamaged(b) ? 'Tear down damaged barricade' : 'Remove barricade', duration: BARRICADE_REMOVE_TIME, target: door.id };
+        doorOpt = { kind: 'remove_barricade', label: isDamaged(b) ? 'Tear down damaged barricade' : 'Remove barricade', duration: BARRICADE_REMOVE_TIME, target: doorway.id };
       }
     } else if (b && b.complete && b.segments.some((hp) => hp > 0)) {
-      doorOpt = { kind: 'bash', label: 'Bash barricade', duration: 0, target: door.id };
+      doorOpt = { kind: 'bash', label: 'Bash barricade', duration: 0, target: doorway.id };
     }
   }
   let panelOpt: ContextOption | null = null;

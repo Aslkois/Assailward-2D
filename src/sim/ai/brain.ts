@@ -204,6 +204,7 @@ export class BotBrain {
   }
 
   private pickTarget(world: World, ch: Character): Character | null {
+    if (world.round.phase === 'prep') return null;
     let best: Character | null = null;
     let bd = Infinity;
     for (const id of ch.visibleEnemies) {
@@ -291,15 +292,16 @@ export class BotBrain {
     const away = norm(sub(ch.pos, e.pos));
     if (ch.hp < 35 && d < 380 && this.role !== 'anchor') {
       it.move = away;
-    } else if (this.diff.strafe && !ch.action) {
+    } else if (this.diff.strafe && !ch.action && d < 230) {
+      // close quarters: keep moving; at range, plant your feet for accuracy
       if (now > this.strafeUntil) {
         this.strafeDir = this.rng.sign();
         this.strafeUntil = now + this.rng.range(0.45, 1.1);
       }
       it.move = { x: -away.y * this.strafeDir * 0.7, y: away.x * this.strafeDir * 0.7 };
     }
-    it.secondary = d > 190 && ws !== null;
-    this.crouch = d > 260 && (this.role === 'anchor' || this.task?.type === 'guard');
+    it.secondary = d > 170 && ws !== null;
+    this.crouch = d > 230 && (this.role === 'anchor' || this.task?.type === 'guard' || ch.side === 'attack');
   }
 
   private shootPoint(world: World, ch: Character, it: Intent, p: Vec2, dt: number): void {
@@ -367,7 +369,7 @@ export class BotBrain {
         barricadeCost: 16,
       };
     }
-    return { barricades: 'avoid', softWalls: false, hardWalls: false, radius: CHAR_RADIUS };
+    return { barricades: 'avoid', softWalls: false, hardWalls: false, radius: CHAR_RADIUS, exteriorCost: 8 };
   }
 
   private computePath(world: World, ch: Character, goal: Vec2): void {
@@ -852,12 +854,12 @@ export class BotBrain {
         if (r === 'arrived' || dist(ch.pos, t.pos) < 14) {
           it.move = { x: 0, y: 0 };
           this.crouch = true;
-          const sweep = Math.sin(now * 0.6 + this.id) * 0.5;
+          const sweep = Math.sin(now * 0.6 + this.id) * (t.type === 'guard' ? 0.35 : 0.5);
           const d = fromAngle(t.facing + sweep);
           this.lookAt = { x: ch.pos.x + d.x * 100, y: ch.pos.y + d.y * 100 };
           if (t.type === 'guard' && !t.claymoreTried && hasCharges(ch, 'claymore')) {
             t.claymoreTried = true;
-            const fd = fromAngle(t.facing);
+            const fd = fromAngle(t.facing + Math.PI);
             this.routine = { kind: 'place', equip: 'claymore', aim: { x: ch.pos.x + fd.x * 60, y: ch.pos.y + fd.y * 60 }, stage: 0, t: now, before: findEquip(ch, 'claymore')!.state.charges };
           }
         } else if (r === 'blocked') {
@@ -905,6 +907,7 @@ export class BotBrain {
         const outside = !world.map.isInterior(ch.pos);
         const run = outside && now - this.lastContactTime > 6 && t.idx < t.waypoints.length;
         const r = this.moveTo(world, ch, it, target, t.idx < t.waypoints.length ? 26 : 12, run);
+        if (!outside && now - this.lastCombat > 3) it.quiet = true;
         if (r === 'arrived') {
           if (t.idx < t.waypoints.length) t.idx++;
           else this.task = null;

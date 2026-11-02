@@ -104,7 +104,11 @@ export function updateCharacter(world: World, ch: Character, it: Intent, dt: num
     }
   }
 
-  // ---- held item
+  // ---- held item (attackers are weapons-locked while staging; they scout with drones)
+  if (world.round.phase === 'prep' && ch.side === 'attack') {
+    if (it.firePressed || it.reload) world.message(ch, 'Weapons locked during preparation — scout with drones (5)');
+    return;
+  }
   if (weapon) {
     if (it.reload) startReload(world, ch, weapon);
     useWeapon(world, ch, weapon, it.fire, it.firePressed);

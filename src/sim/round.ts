@@ -20,9 +20,9 @@ export interface RoundRules {
 export const DEFAULT_RULES: RoundRules = {
   prepTime: 40,
   actionTime: 170,
-  fuseTime: 40,
+  fuseTime: 35,
   plantTime: 6,
-  disableTime: 7,
+  disableTime: 8,
   endDelay: 5,
 };
 

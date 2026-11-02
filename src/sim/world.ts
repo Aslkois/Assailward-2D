@@ -243,6 +243,8 @@ export class World implements CollisionWorld {
 
   damageCharacter(target: Character, amount: number, sourceId: number, cause: string, info: { mult?: number; pos?: Vec2 } = {}): void {
     if (!target.alive || amount <= 0) return;
+    // Preparation phase: attackers are still staging, nobody can be hurt (drones/devices still can).
+    if (this.round.phase === 'prep') return;
     const dealt = Math.min(target.hp, amount);
     target.hp -= amount;
     target.lastHurtTime = this.time;

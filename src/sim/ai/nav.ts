@@ -1,7 +1,7 @@
 import { CELL } from '../../config/constants';
 import { barricadeBlocksPassage } from '../barricade';
 import { BODY_COLLISION, circleBlocked, DRONE_COLLISION } from '../collision';
-import { MAT } from '../map';
+import { FLOOR, MAT } from '../map';
 import type { Vec2 } from '../math';
 import type { World } from '../world';
 
@@ -22,6 +22,7 @@ export interface NavOpts {
   softCost?: number; // extra cost of breaching a soft wall cell (lower = prefers making holes)
   hardCost?: number;
   barricadeCost?: number;
+  exteriorCost?: number; // extra cost per outdoor cell (defenders avoid leaving the building)
 }
 
 export type Obstacle =
@@ -89,6 +90,7 @@ export function buildCostField(world: World, opts: NavOpts): { cost: Float32Arra
       const cy = (i / m.w) | 0;
       if (m.isSolid(cx + 1, cy) || m.isSolid(cx - 1, cy) || m.isSolid(cx, cy + 1) || m.isSolid(cx, cy - 1)) c += 2;
     }
+    if (opts.exteriorCost && m.floor[i] === FLOOR.EXTERIOR) c += opts.exteriorCost;
     cost[i] = c;
   }
   for (const d of world.deployables) {

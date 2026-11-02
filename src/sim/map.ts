@@ -23,6 +23,8 @@ export interface MapDef {
   defenderSpawns: [number, number][];
   anchors: { cx: number; cy: number; facing: number }[];
   roamPoints: [number, number][];
+  /** Where roaming defenders wait during preparation (out of the attackers' sightlines). */
+  defenderPrepSpots: [number, number][];
   approaches: { name: string; spawn: string; waypoints: [number, number][]; hardBreach?: boolean }[];
 }
 
