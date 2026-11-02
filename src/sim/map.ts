@@ -23,7 +23,7 @@ export interface MapDef {
   defenderSpawns: [number, number][];
   anchors: { cx: number; cy: number; facing: number }[];
   roamPoints: [number, number][];
-  approaches: { name: string; spawn: string; waypoints: [number, number][] }[];
+  approaches: { name: string; spawn: string; waypoints: [number, number][]; hardBreach?: boolean }[];
 }
 
 /**

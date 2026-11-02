@@ -446,7 +446,7 @@ export function deployDrone(world: World, ch: Character): Drone | null {
   world.drones.push(dr);
   ch.inv.drones--;
   world.emit({ type: 'drone', action: 'deploy', id: dr.id, pos, team: ch.team });
-  world.sound(pos, 120, 'drone', ch.id, ch.team);
+  world.sound(pos, 120, 'drone', -1, ch.team);
   return dr;
 }
 
@@ -477,7 +477,7 @@ export function updateDrones(world: World, intents: Map<number, Intent>, dt: num
     if (sp > 25) {
       const t = (droneNoise.get(dr.id) ?? 0) + dt;
       if (t > 0.4) {
-        world.sound(dr.pos, 85, 'drone', dr.ownerId, dr.team);
+        world.sound(dr.pos, 85, 'drone', -1, dr.team);
         droneNoise.set(dr.id, 0);
       } else droneNoise.set(dr.id, t);
     }

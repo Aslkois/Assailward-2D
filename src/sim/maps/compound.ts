@@ -52,6 +52,6 @@ export const COMPOUND: MapDef = {
     { name: 'Lobby', spawn: 'West Lot', waypoints: [[10, 19], [25, 19], [25, 34]] },
     { name: 'Garage', spawn: 'West Lot', waypoints: [[9, 49], [26, 50], [47, 45]] },
     { name: 'East', spawn: 'Southeast Dock', waypoints: [[92, 19], [74, 20], [74, 35]] },
-    { name: 'South', spawn: 'Southeast Dock', waypoints: [[75, 62], [75, 50], [58, 48]] },
+    { name: 'South', spawn: 'Southeast Dock', waypoints: [[75, 62], [75, 50], [58, 48], [52, 44]], hardBreach: true },
   ],
 };
