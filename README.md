@@ -26,6 +26,14 @@ npm run preview    # serves dist/ at http://localhost:4173
 
 `dist/` must be served over HTTP (any static server works); opening `dist/index.html` directly from the file system is blocked by browsers for module scripts. No network access is needed at runtime: there are no external assets, fonts or services.
 
+## Play online (GitHub Pages)
+
+The workflow [`.github/workflows/pages.yml`](.github/workflows/pages.yml) typechecks, tests and builds every push. Pushes to **`main`** (or a manual **Run workflow** on `main`) also publish `dist/` to GitHub Pages:
+
+**https://aslkois.github.io/Assailward-2D/**
+
+One-time setup: in the repository go to **Settings → Pages → Build and deployment → Source** and choose **GitHub Actions**. The build uses relative asset paths (`base: './'`), so it works under the `/Assailward-2D/` project path without extra configuration.
+
 ## How a match works
 
 * **Teams:** you plus 4 AI teammates (BLUE) against 5 AI opponents (RED). Pick your starting side and AI difficulty (Easy / Normal / Hard) in the menu.

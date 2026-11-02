@@ -1,0 +1,63 @@
+name: Build and deploy to GitHub Pages
+
+# Every push is typechecked, tested and built. Only pushes to `main` (or a manual run on `main`)
+# publish the built game to GitHub Pages.
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      DEPLOY: ${{ github.ref == 'refs/heads/main' }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit and simulation tests
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Configure Pages
+        if: env.DEPLOY == 'true'
+        uses: actions/configure-pages@v6
+
+      - name: Upload Pages artifact
+        if: env.DEPLOY == 'true'
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: dist
+
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
