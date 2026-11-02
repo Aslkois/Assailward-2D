@@ -134,7 +134,8 @@ describe('inventory and slots', () => {
   it('attackers deploy drones through slot 5 and drive them while the body stays put', () => {
     const w = makeWorld();
     const atk = byTeam(w, 0);
-    place(atk, 49, 3);
+    place(atk, 41, 3); // west of the spawn cover strip
+    atk.spawnZone = null;
     atk.facing = Math.PI / 2;
     const body = { ...atk.pos };
     run(w, 0.05, { [atk.id]: () => ({ selectSlot: 5, aim: { x: atk.pos.x, y: atk.pos.y + 100 } }) });

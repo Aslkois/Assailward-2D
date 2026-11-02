@@ -112,16 +112,12 @@ try {
   await sleep(300);
   check('right mouse = precision aim', (await player()).ads === true);
   await page.mouse.up({ button: 'right' });
-  const before = await player();
+  const lockedBefore = await player();
   await page.mouse.down();
   await sleep(250);
   await page.mouse.up();
-  await sleep(300);
-  const after = await player();
-  check('left click fires (ammo spent)', after.mag < before.mag, `${before.mag} -> ${after.mag}`);
-  await page.keyboard.press('r');
   await sleep(200);
-  check('R reloads', (await player()).reloading === true);
+  check('attackers are weapons-locked during preparation', (await player()).mag === lockedBefore.mag);
   await page.keyboard.press('5');
   await sleep(800);
   check('5 opens the drone feed', (await player()).cam?.kind === 'drone');
@@ -148,6 +144,17 @@ try {
   await G(() => {
     window.__assailward.game.scene.getScene('Game').world.round.timeLeft = 0.05;
   });
+  await sleep(500);
+  const before = await player();
+  await page.mouse.down();
+  await sleep(250);
+  await page.mouse.up();
+  await sleep(300);
+  const after = await player();
+  check('left click fires in the action phase (ammo spent)', after.mag < before.mag, `${before.mag} -> ${after.mag}`);
+  await page.keyboard.press('r');
+  await sleep(200);
+  check('R reloads', (await player()).reloading === true);
   const ta = await simTime();
   await sleep(7000);
   const tb = await simTime();
@@ -180,6 +187,41 @@ try {
   }, doorwayId);
   check('defender holds F to barricade a doorway', !!built && built.complete, JSON.stringify(built));
   await page.screenshot({ path: path.join(outDir, '7-barricade.png') });
+
+  // ---------------------------------------------------------------- round/match flow through the real scenes
+  const endRound = (winner) =>
+    G((winner) => {
+      const w = window.__assailward.game.scene.getScene('Game').world;
+      w.round.rules.endDelay = 0.3;
+      w.round.end(w, winner, 'smoke test');
+    }, winner);
+  const sidesNow = () => G(() => window.__assailward.session.match.sides());
+  const sidesR1 = await sidesNow();
+  await endRound(0);
+  await page.waitForFunction(() => window.__assailward.game.scene.isActive('Loadout'));
+  check('round end returns to loadout for the next round', true);
+  await page.screenshot({ path: path.join(outDir, '8-next-round-loadout.png') });
+  await click(1050, 672); // DEPLOY round 2
+  await page.waitForFunction(() => window.__assailward.game.scene.isActive('Game') && window.__assailward.session.match.round === 2);
+  await sleep(800);
+  await endRound(1);
+  await page.waitForFunction(() => window.__assailward.game.scene.isActive('Loadout') && window.__assailward.session.match.round === 3);
+  const sidesR3 = await sidesNow();
+  check('sides switch after two rounds', sidesR1[0] !== sidesR3[0], `${sidesR1[0]} -> ${sidesR3[0]}`);
+  await page.screenshot({ path: path.join(outDir, '9-sides-switched.png') });
+  for (let r = 0; r < 3; r++) {
+    await click(1050, 672);
+    await page.waitForFunction(() => window.__assailward.game.scene.isActive('Game'));
+    await sleep(800);
+    await endRound(0);
+    await page.waitForFunction(() => window.__assailward.game.scene.isActive('Loadout') || window.__assailward.game.scene.isActive('MatchEnd'));
+    await sleep(300);
+  }
+  check('match ends at the win target', await G(() => window.__assailward.game.scene.isActive('MatchEnd')));
+  await page.screenshot({ path: path.join(outDir, '10-match-end.png') });
+  await click(520, 650); // PLAY AGAIN
+  await page.waitForFunction(() => window.__assailward.game.scene.isActive('Loadout'));
+  check('play again starts a fresh match', (await G(() => window.__assailward.session.match.round)) === 1);
 } catch (e) {
   errors.push(String(e));
 } finally {
