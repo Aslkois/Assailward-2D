@@ -156,7 +156,7 @@ The **browser smoke test** drives the real UI with mouse and keyboard and assert
 * Menu → loadout clicks → deploy.
 * WASD movement, slot 3 cycling, right-click precision aim, the prep weapons lock, slot 5 drone feed open/close, Esc pause/resume.
 * Firing and reload in the action phase, the sim running in real time, and a defender holding F to build a barricade.
-* Round end → next round, sides switching after two rounds, the match ending at 4 wins, and Play Again.
+* Round end → next round, controls still bound after the scene restart, sides switching after two rounds, the match ending at 4 wins, and Play Again.
 
 **Bot-only gameplay validation** (24 rounds per difficulty, `scripts/diag.ts`):
 
