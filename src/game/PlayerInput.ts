@@ -95,10 +95,6 @@ export class PlayerInput {
     this.clicks = { left: 0, right: 0 };
   }
 
-  peekSlot(): number | null {
-    return this.pend.selectSlot;
-  }
-
   consumeSlot(): number | null {
     const s = this.pend.selectSlot;
     this.pend.selectSlot = null;

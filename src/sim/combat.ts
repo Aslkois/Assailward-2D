@@ -1,4 +1,4 @@
-import { CHAR_RADIUS, DRONE_RADIUS, MELEE_ARC, MELEE_COOLDOWN, MELEE_DAMAGE, MELEE_MATERIAL_DAMAGE, MELEE_REACH, BARRICADE_BULLET_FACTOR } from '../config/constants';
+import { DRONE_RADIUS, MELEE_ARC, MELEE_COOLDOWN, MELEE_DAMAGE, MELEE_MATERIAL_DAMAGE, MELEE_REACH, BARRICADE_BULLET_FACTOR } from '../config/constants';
 import { EQUIPMENT } from '../config/equipment';
 import type { WeaponDef } from '../config/weapons';
 import { arcSegmentDamage, segmentRect } from './barricade';
@@ -215,9 +215,7 @@ export function doMelee(world: World, ch: Character, heavy: boolean): void {
     }
   }
   for (const dep of world.deployables) {
-    if (!dep.alive || dep.kind === 'camera') continue;
-    if (dep.team === ch.team && dep.kind !== 'shield' && dep.kind !== 'barbed_wire') continue;
-    if (dep.team === ch.team) continue;
+    if (!dep.alive || dep.team === ch.team) continue;
     const p = dep.rect ? { x: Math.max(dep.rect.x0, Math.min(origin.x, dep.rect.x1)), y: Math.max(dep.rect.y0, Math.min(origin.y, dep.rect.y1)) } : dep.pos;
     if (inArc(p, 6)) world.damageDeployable(dep, matDamage, ch.team, 'melee');
   }
@@ -235,4 +233,3 @@ function segmentCenterOf(doorwayId: number, dmg: Map<number, number>, world: Wor
   return { x: (r.x0 + r.x1) / 2, y: (r.y0 + r.y1) / 2 };
 }
 
-export const BODY_RADIUS = CHAR_RADIUS;

@@ -1,4 +1,4 @@
-import { CELL, CHAR_RADIUS } from '../../config/constants';
+import { CHAR_RADIUS } from '../../config/constants';
 import type { EquipId } from '../../config/equipment';
 import { circleBlocked } from '../collision';
 import { lineOfSight } from '../sight';
@@ -287,6 +287,5 @@ export class TeamPlanner {
     const final = { x: m.objectiveCenter.x + b.rng.range(-50, 50), y: m.objectiveCenter.y + b.rng.range(-16, 16) };
     const goTime = now < this.actionStart + 1 ? now + b.rng.range(0, 6) : now;
     b.task = { type: 'attack', waypoints, idx: start, goTime, final };
-    void CELL;
   }
 }

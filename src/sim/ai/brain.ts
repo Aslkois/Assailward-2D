@@ -114,7 +114,6 @@ export class BotBrain {
     const ch = world.charById(this.id)!;
     const it = emptyIntent(ch.pos);
     if (!ch.alive || world.round.phase === 'ended') return it;
-    const now = world.time;
     if (!this.phaseSeen) this.aimAngle = ch.facing;
     this.perceive(world, ch);
     this.crouch = false;
@@ -144,7 +143,6 @@ export class BotBrain {
     }
     this.weaponUpkeep(world, ch, it, !!target);
     it.crouch = this.crouch && !it.sprint;
-    void now;
     return it;
   }
 

@@ -1,6 +1,6 @@
-import { CELL, CHAR_MAX_HP, INTEL_TTL, MARK_TTL, REINFORCEMENTS_PER_TEAM, WALL_BULLET_FACTOR } from '../config/constants';
+import { CELL, INTEL_TTL, MARK_TTL, REINFORCEMENTS_PER_TEAM, WALL_BULLET_FACTOR } from '../config/constants';
 import type { Loadout } from '../config/loadouts';
-import { barricadeLineRect, damageSegments, doorwayStatus, intactSegments, type DoorwayStatus } from './barricade';
+import { barricadeLineRect, damageSegments, doorwayStatus, type DoorwayStatus } from './barricade';
 import { resolveCircle, type CollisionWorld } from './collision';
 import { updateCharacter } from './character';
 import { updateDeployables, updateDrones, updateProjectiles, updateSmokes } from './equipment';
@@ -404,13 +404,4 @@ export class World implements CollisionWorld {
     }
   }
 
-  barricadeIntact(doorwayId: number): number {
-    const b = this.map.doorways[doorwayId].barricade;
-    return b ? intactSegments(b) : 0;
-  }
-
-  /** Revives nobody; used by tests to reset HP. */
-  healAll(): void {
-    for (const c of this.chars) if (c.alive) c.hp = CHAR_MAX_HP;
-  }
 }

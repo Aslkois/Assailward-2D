@@ -156,7 +156,7 @@ export class GameScene extends Phaser.Scene {
     this.audioDir.listener = w.player!.alive ? w.player!.pos : vs.focus;
     this.worldR.render(
       { view: vs.view, team: 0, playerId: w.playerId },
-      { debug: this.debug, director: this.director, showSpawn: w.round.phase === 'prep' },
+      { debug: this.debug, director: this.director, showSpawn: w.round.phase === 'prep', aim: this.aimPoint() },
     );
   }
 

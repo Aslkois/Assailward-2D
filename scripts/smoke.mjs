@@ -204,6 +204,10 @@ try {
   await click(1050, 672); // DEPLOY round 2
   await page.waitForFunction(() => window.__assailward.game.scene.isActive('Game') && window.__assailward.session.match.round === 2);
   await sleep(800);
+  await page.keyboard.press('Control');
+  await sleep(200);
+  const stance = await G(() => window.__assailward.game.scene.getScene('Game').world.player.stance);
+  check('controls still bound after a scene restart (Ctrl crouch toggle in round 2)', stance === 'crouch', stance);
   await endRound(1);
   await page.waitForFunction(() => window.__assailward.game.scene.isActive('Loadout') && window.__assailward.session.match.round === 3);
   const sidesR3 = await sidesNow();

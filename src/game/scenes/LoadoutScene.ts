@@ -1,13 +1,13 @@
 import Phaser from 'phaser';
 import { ARMOR, type ArmorTier } from '../../config/constants';
-import { EQUIPMENT, gadgetPoolFor, utilityPoolFor, type EquipDef, type EquipId } from '../../config/equipment';
+import { gadgetPoolFor, utilityPoolFor, type EquipDef, type EquipId } from '../../config/equipment';
 import { validateLoadout, type Loadout } from '../../config/loadouts';
-import { WEAPONS, weaponsFor, type WeaponDef } from '../../config/weapons';
+import { weaponsFor, type WeaponDef } from '../../config/weapons';
 import { COMPOUND } from '../../sim/maps/compound';
 import { TEAM_NAMES } from '../../sim/setup';
 import { session } from '../session';
 import { C, CSS, textStyle } from '../theme';
-import { drawBackdrop, makeButton, type Button } from '../ui';
+import { drawBackdrop, makeButton } from '../ui';
 
 const COL_W = 228;
 
@@ -18,7 +18,6 @@ export class LoadoutScene extends Phaser.Scene {
   private info!: Phaser.GameObjects.Text;
   private infoTitle!: Phaser.GameObjects.Text;
   private errors!: Phaser.GameObjects.Text;
-  private deploy!: Button;
 
   constructor() {
     super('Loadout');
@@ -69,9 +68,8 @@ export class LoadoutScene extends Phaser.Scene {
       session.match = null;
       this.scene.start('Menu');
     }, { width: 200, height: 40 });
-    this.deploy = makeButton(this, -500, -500, '', () => undefined);
     this.input.keyboard?.once('keydown-ENTER', () => this.deployNow());
-    this.update();
+    this.refreshUi();
   }
 
   private column<T>(
@@ -89,7 +87,7 @@ export class LoadoutScene extends Phaser.Scene {
     for (const it of items) {
       const b = makeButton(this, x + COL_W / 2, yy, label(it), () => {
         pick(it);
-        this.update();
+        this.refreshUi();
       }, { width: COL_W, height: 36, size: 13 });
       b.bg.on('pointerover', () => {
         const d = describe(it);
@@ -128,15 +126,11 @@ export class LoadoutScene extends Phaser.Scene {
     };
   }
 
-  override update(): void {
-    if (!this.loadout) return;
+  /** Re-applies selection highlights after a pick (not every frame, so hover states survive). */
+  private refreshUi(): void {
     for (const r of this.refresh) r();
     const side = session.match!.sideOf(0);
-    const errs = validateLoadout(side, this.loadout);
-    this.errors.setText(errs.join(' · '));
-    void this.deploy;
-    void WEAPONS;
-    void EQUIPMENT;
+    this.errors.setText(validateLoadout(side, this.loadout).join(' · '));
   }
 
   private deployNow(): void {

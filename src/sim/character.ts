@@ -4,7 +4,7 @@ import { BODY_COLLISION, moveCircle } from './collision';
 import { doMelee, startReload, tickWeapon, useWeapon } from './combat';
 import { currentEquip, currentWeapon, selectSlot, type Character, type Slot } from './entities';
 import { deployDrone, useEquipment } from './equipment';
-import { angleDiff, angleTo, clamp, fromAngle, pointInAABB, type Vec2 } from './math';
+import { angleDiff, angleTo, clamp, pointInAABB, type Vec2 } from './math';
 import { canSeeCircle, viewOf } from './sight';
 import type { Intent } from './types';
 import type { World } from './world';
@@ -244,9 +244,4 @@ function updateCameraControl(world: World, ch: Character, it: Intent, dt: number
   }
   if (it.secondaryPressed) cycleView(world, ch);
   if (it.firePressed) markAt(world, ch, it.aim);
-}
-
-/** Direction helper used by placement and throws. */
-export function facingVec(ch: Character): Vec2 {
-  return fromAngle(ch.facing);
 }

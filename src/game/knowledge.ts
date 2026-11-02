@@ -75,11 +75,8 @@ export class KnownMap {
           this.dirty.add(i);
         }
       }
-    } else if (e.type === 'barricade') {
-      const b = this.world.map.doorways[e.doorwayId].barricade;
-      if (e.team === this.viewerTeam || (b && b.team === this.viewerTeam) || e.action === 'removed' || e.action === 'build_cancel') {
-        if (e.team === this.viewerTeam) this.snapDoor(e.doorwayId);
-      }
+    } else if (e.type === 'barricade' && e.team === this.viewerTeam) {
+      this.snapDoor(e.doorwayId);
     }
   }
 

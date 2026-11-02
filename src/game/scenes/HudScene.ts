@@ -3,6 +3,7 @@ import { ARMOR } from '../../config/constants';
 import { findContextAction } from '../../sim/actions';
 import { currentSpread } from '../../sim/combat';
 import { currentEquip, currentWeapon, type Character } from '../../sim/entities';
+import { findPlacement } from '../../sim/equipment';
 import type { GameEvent } from '../../sim/events';
 import { TEAM_NAMES } from '../../sim/setup';
 import type { Team } from '../../sim/types';
@@ -283,6 +284,7 @@ export class HudScene extends Phaser.Scene {
       } else {
         const ctx = findContextAction(w, me);
         if (ctx) prompt = `[F]  ${ctx.label}`;
+        else prompt = this.equipHint(me);
       }
     }
     this.set('prompt', prompt).setStroke('#000000', 4);
@@ -292,6 +294,32 @@ export class HudScene extends Phaser.Scene {
       this.set('message', me.message.text);
     }
     this.t.message.setVisible(now < this.msgUntil).setStroke('#000000', 4);
+  }
+
+  /** Explains what the mouse buttons do with the held utility/gadget. */
+  private equipHint(me: Character): string {
+    const eq = currentEquip(me);
+    if (!eq) return '';
+    const w = this.game_.world;
+    if (w.round.phase === 'prep' && me.side === 'attack') return '';
+    const d = eq.def;
+    if (eq.charges === 0) {
+      const placed = w.deployables.some((x) => x.alive && x.ownerId === me.id && x.kind === d.id);
+      return placed && (d.id === 'soft_breach' || d.id === 'hard_breach') ? '[RMB]  Detonate' : `${d.name}: none left`;
+    }
+    switch (d.use) {
+      case 'throw':
+        return '[LMB] Throw to cursor   ·   [RMB] Short roll';
+      case 'scan':
+        return '[Hold LMB] Pulse scan';
+      case 'tool':
+        return '[LMB] Swing';
+      case 'place': {
+        const pl = findPlacement(w, me, d.id);
+        const det = (d.id === 'soft_breach' || d.id === 'hard_breach') && w.deployables.some((x) => x.alive && x.ownerId === me.id && x.kind === d.id) ? '   ·   [RMB] Detonate' : '';
+        return (pl.ok ? `[Hold LMB] Place ${d.name}` : pl.reason ?? 'Cannot place here') + det;
+      }
+    }
   }
 
   private drawCameraOverlay(): void {
@@ -451,7 +479,7 @@ export class HudScene extends Phaser.Scene {
         const a = (tally?.assists ?? 0) + c.stats.assists;
         const p = (tally?.plants ?? 0) + c.stats.plants;
         const ds = (tally?.disables ?? 0) + c.stats.disables;
-        const status = c.alive ? (c.team === w.player!.team || this.game_.worldR.visibleEnemies.has(c.id) ? 'ALIVE' : 'ALIVE') : 'DEAD';
+        const status = c.alive ? 'ALIVE' : 'DEAD';
         const line = `${(c.isPlayer ? '▶ ' : '  ') + c.name.padEnd(18)}${String(k).padStart(3)}  ${String(d).padStart(3)}  ${String(a).padStart(3)}  ${String(p).padStart(5)}  ${String(ds).padStart(6)}   ${status}`;
         this.boardRows[row++].setText(line).setColor(c.alive ? CSS.text : CSS.faint);
       }

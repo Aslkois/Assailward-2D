@@ -2,7 +2,8 @@ import Phaser from 'phaser';
 import { CAMERA_FOV, DRONE_RADIUS } from '../../config/constants';
 import { segmentCenter, segmentRect } from '../../sim/barricade';
 import type { BotDirector } from '../../sim/ai/director';
-import type { Character, Deployable } from '../../sim/entities';
+import { currentEquip, type Character, type Deployable } from '../../sim/entities';
+import { findPlacement } from '../../sim/equipment';
 import type { GameEvent, ImpactMaterial } from '../../sim/events';
 import { fromAngle, type Vec2 } from '../../sim/math';
 import type { Doorway } from '../../sim/map';
@@ -136,7 +137,7 @@ export class WorldRenderer {
 
   // ------------------------------------------------------------------ frame
 
-  render(viewer: Viewer, opts: { debug: boolean; director?: BotDirector; showSpawn?: boolean }): void {
+  render(viewer: Viewer, opts: { debug: boolean; director?: BotDirector; showSpawn?: boolean; aim?: Vec2 }): void {
     const w = this.world;
     const now = w.time;
     const view = viewer.view;
@@ -166,6 +167,7 @@ export class WorldRenderer {
     this.drawEnemies(viewer, now);
     this.drawFx(now);
     this.drawFriendly(viewer, now);
+    this.drawEquipPreview(viewer, opts.aim);
     this.drawFloaters(now);
     this.gDebug.clear();
     for (const t of this.debugTexts) t.setVisible(false);
@@ -465,6 +467,39 @@ export class WorldRenderer {
         g.lineStyle(1, C.red, 0.5 * life);
         g.strokeCircle(e.pos.x, e.pos.y, s + 5 + 2 * Math.sin(now * 8));
       }
+    }
+  }
+
+  /** Placement ghost (valid = green, invalid = red) and throw landing marker for the held item. */
+  private drawEquipPreview(viewer: Viewer, aim?: Vec2): void {
+    const p = this.world.charById(viewer.playerId);
+    if (!p || !p.alive || p.camView || p.action) return;
+    const eq = currentEquip(p);
+    if (!eq || eq.charges === 0) return;
+    const g = this.gFriendly;
+    if (eq.def.use === 'place') {
+      const pl = findPlacement(this.world, p, eq.def.id);
+      const col = pl.ok ? C.good : C.bad;
+      if (pl.rect) {
+        g.lineStyle(1.5, col, 0.8);
+        g.strokeRect(pl.rect.x0, pl.rect.y0, pl.rect.x1 - pl.rect.x0, pl.rect.y1 - pl.rect.y0);
+      } else if (pl.ok) {
+        g.lineStyle(1.5, col, 0.9);
+        g.strokeCircle(pl.pos.x, pl.pos.y, 6);
+      } else {
+        const f = fromAngle(p.facing);
+        const q = { x: p.pos.x + f.x * 30, y: p.pos.y + f.y * 30 };
+        g.lineStyle(2, col, 0.8);
+        g.lineBetween(q.x - 4, q.y - 4, q.x + 4, q.y + 4);
+        g.lineBetween(q.x + 4, q.y - 4, q.x - 4, q.y + 4);
+      }
+    } else if (eq.def.use === 'throw' && aim) {
+      const f = fromAngle(p.facing);
+      const d = Math.max(30, Math.min(Math.hypot(aim.x - p.pos.x, aim.y - p.pos.y), 340));
+      const land = { x: p.pos.x + f.x * d, y: p.pos.y + f.y * d };
+      g.lineStyle(1, C.amber, 0.35);
+      for (let k = 0; k < d; k += 14) g.lineBetween(p.pos.x + f.x * k, p.pos.y + f.y * k, p.pos.x + f.x * Math.min(d, k + 7), p.pos.y + f.y * Math.min(d, k + 7));
+      g.strokeCircle(land.x, land.y, eq.def.radius ? Math.min(eq.def.radius, 60) * 0.5 : 10);
     }
   }
 
